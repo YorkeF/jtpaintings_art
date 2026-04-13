@@ -1,9 +1,20 @@
-CREATE TABLE IF NOT EXISTS sections (
+CREATE TABLE IF NOT EXISTS supersections (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(255) NOT NULL,
   slug       VARCHAR(255) NOT NULL UNIQUE,
   sort_order INT DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS sections (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  supersection_id  INT NULL,
+  name             VARCHAR(255) NOT NULL,
+  slug             VARCHAR(255) NOT NULL UNIQUE,
+  sort_order       INT DEFAULT 0
+);
+
+-- Idempotent: adds supersection_id to sections if the table already existed before this migration
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS supersection_id INT NULL AFTER id;
 
 CREATE TABLE IF NOT EXISTS settings (
   `key`   VARCHAR(100) PRIMARY KEY,

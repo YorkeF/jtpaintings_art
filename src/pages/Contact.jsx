@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import SiteHeader from '../components/gallery/SiteHeader.jsx'
 
 export default function Contact() {
   const [name, setName] = useState('')
@@ -37,21 +37,7 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold tracking-tight text-gray-900">
-            JT Paintings
-          </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="/contact" className="text-sm text-gray-800 hover:text-gray-600">
-              Contact
-            </Link>
-            <Link to="/admin" className="text-sm text-gray-400 hover:text-gray-600">
-              Admin
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="max-w-xl mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Contact</h1>

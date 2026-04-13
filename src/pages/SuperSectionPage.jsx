@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react'
+import { useParams, Navigate } from 'react-router-dom'
+import Lightbox from '../components/Lightbox.jsx'
+import SiteHeader from '../components/gallery/SiteHeader.jsx'
+import ImageGrid from '../components/gallery/ImageGrid.jsx'
+
+export default function SuperSectionPage() {
+  const { slug } = useParams()
+  const [supersection, setSupersection] = useState(null)
+  const [notFound, setNotFound] = useState(false)
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 })
+
+  useEffect(() => {
+    fetch('/api/supersections.php')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!Array.isArray(data)) { setNotFound(true); return }
+        const match = data.find((ss) => ss.slug === slug)
+        if (!match) { setNotFound(true); return }
+        setSupersection(match)
+      })
+      .catch(() => setNotFound(true))
+  }, [slug])
+
+  const openLightbox = (images, index) => setLightbox({ open: true, images, index })
+  const closeLightbox = () => setLightbox((lb) => ({ ...lb, open: false }))
+  const prevImage = () =>
+    setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
+  const nextImage = () =>
+    setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
+
+  if (notFound) return <Navigate to="/" replace />
+
+  const sections = supersection?.sections ?? []
+  const allEmpty = sections.every((s) => !s.images?.length)
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SiteHeader />
+
+      <main className="max-w-6xl mx-auto px-4 py-10 space-y-16">
+        {supersection && (
+          <h1 className="text-3xl font-bold text-gray-900">{supersection.name}</h1>
+        )}
+
+        {supersection && allEmpty && (
+          <p className="text-center text-gray-400 py-20">No images in this section yet.</p>
+        )}
+
+        {sections.map((section) =>
+          section.images?.length > 0 ? (
+            <section key={section.id}>
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">
+                {section.name}
+              </h2>
+              <ImageGrid
+                images={section.images}
+                onOpen={(i) => openLightbox(section.images, i)}
+              />
+            </section>
+          ) : null
+        )}
+      </main>
+
+      {lightbox.open && (
+        <Lightbox
+          image={lightbox.images[lightbox.index]}
+          onClose={closeLightbox}
+          onPrev={prevImage}
+          onNext={nextImage}
+        />
+      )}
+    </div>
+  )
+}

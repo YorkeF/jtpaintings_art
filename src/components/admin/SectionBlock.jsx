@@ -2,7 +2,7 @@ import { useState } from 'react'
 import AddImageForm from './AddImageForm.jsx'
 import ImageRow from './ImageRow.jsx'
 
-export default function SectionBlock({ section, sections, onChanged }) {
+export default function SectionBlock({ section, sections, supersections = [], onChanged }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(section.name)
   const [saving, setSaving] = useState(false)
@@ -33,9 +33,23 @@ export default function SectionBlock({ section, sections, onChanged }) {
     onChanged()
   }
 
+  const assignSupersection = async (e) => {
+    const value = e.target.value
+    await fetch(`/api/sections.php?id=${section.id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ supersection_id: value === '' ? null : value }),
+    })
+    onChanged()
+  }
+
+  // When inside a SuperSectionBlock the outer element is a div, not a card
+  const isNested = section.supersection_id != null
+
   return (
-    <section className="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+    <section className={isNested ? '' : 'bg-white rounded-xl shadow-sm overflow-hidden'}>
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 flex-wrap">
         {editing ? (
           <>
             <input
@@ -61,6 +75,21 @@ export default function SectionBlock({ section, sections, onChanged }) {
         ) : (
           <>
             <h2 className="text-lg font-semibold text-gray-800 flex-1">{section.name}</h2>
+
+            {/* Supersection assignment */}
+            {supersections.length > 0 && (
+              <select
+                value={section.supersection_id ?? ''}
+                onChange={assignSupersection}
+                className="text-sm border border-gray-200 rounded px-2 py-1 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">— No group —</option>
+                {supersections.map((ss) => (
+                  <option key={ss.id} value={ss.id}>{ss.name}</option>
+                ))}
+              </select>
+            )}
+
             <button
               onClick={() => setShowAddImage((v) => !v)}
               className="text-sm text-blue-600 hover:text-blue-800"

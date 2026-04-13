@@ -29,10 +29,21 @@ if ($method === 'POST') {
 if ($method === 'PUT' && $id) {
     requireAdmin();
     $body = json_decode(file_get_contents('php://input'), true);
-    $name = trim($body['name'] ?? '');
-    if ($name === '') jsonResponse(['error' => 'Name is required'], 400);
-    // Only update display name — slug stays fixed so existing image paths don't break
-    $db->prepare('UPDATE sections SET name = ? WHERE id = ?')->execute([$name, $id]);
+
+    if (array_key_exists('supersection_id', $body)) {
+        $supId = ($body['supersection_id'] !== null && $body['supersection_id'] !== '')
+            ? (int) $body['supersection_id']
+            : null;
+        $db->prepare('UPDATE sections SET supersection_id = ? WHERE id = ?')->execute([$supId, $id]);
+    }
+
+    if (array_key_exists('name', $body)) {
+        $name = trim($body['name']);
+        if ($name === '') jsonResponse(['error' => 'Name is required'], 400);
+        // Only update display name — slug stays fixed so existing image paths don't break
+        $db->prepare('UPDATE sections SET name = ? WHERE id = ?')->execute([$name, $id]);
+    }
+
     jsonResponse(['success' => true]);
 }
 

@@ -2,18 +2,25 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ImageTable from './ImageTable.jsx'
 import SectionBlock from './SectionBlock.jsx'
+import SuperSectionBlock from './SuperSectionBlock.jsx'
 import SettingsPanel from './SettingsPanel.jsx'
 
 export default function AdminPanel({ onLogout }) {
+  const [supersections, setSupersections] = useState([])
   const [sections, setSections] = useState([])
   const [unsectioned, setUnsectioned] = useState([])
   const [progress, setProgress] = useState(null) // null | { stage, label, current, total }
   const [uploadResult, setUploadResult] = useState(null)
   const [newSectionName, setNewSectionName] = useState('')
   const [addingSection, setAddingSection] = useState(false)
+  const [newSuperName, setNewSuperName] = useState('')
+  const [addingSuper, setAddingSuper] = useState(false)
   const fileInputRef = useRef()
 
   const load = () => {
+    fetch('/api/supersections.php', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setSupersections(Array.isArray(d) ? d : []))
     fetch('/api/sections.php', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setSections(Array.isArray(d) ? d : []))
@@ -41,6 +48,21 @@ export default function AdminPanel({ onLogout }) {
     })
     setNewSectionName('')
     setAddingSection(false)
+    load()
+  }
+
+  const createSupersection = async (e) => {
+    e.preventDefault()
+    if (!newSuperName.trim()) return
+    setAddingSuper(true)
+    await fetch('/api/supersections.php', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newSuperName.trim() }),
+    })
+    setNewSuperName('')
+    setAddingSuper(false)
     load()
   }
 
@@ -191,14 +213,40 @@ export default function AdminPanel({ onLogout }) {
           )}
         </section>
 
+        {/* New Super Section */}
+        <section className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">New Group</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Groups appear in the site navigation. Sections are assigned to groups below.
+          </p>
+          <form onSubmit={createSupersection} className="flex gap-2">
+            <input
+              value={newSuperName}
+              onChange={(e) => setNewSuperName(e.target.value)}
+              placeholder="e.g. Paintings, Photography"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="submit"
+              disabled={addingSuper || !newSuperName.trim()}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50"
+            >
+              {addingSuper ? 'Creating…' : 'Create group'}
+            </button>
+          </form>
+        </section>
+
         {/* New Section */}
         <section className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">New Section</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">New Section</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Sections hold images. Use the group dropdown on each section to assign it.
+          </p>
           <form onSubmit={createSection} className="flex gap-2">
             <input
               value={newSectionName}
               onChange={(e) => setNewSectionName(e.target.value)}
-              placeholder="Section name"
+              placeholder="e.g. Oil, Watercolour, Landscapes"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <button
@@ -206,7 +254,7 @@ export default function AdminPanel({ onLogout }) {
               disabled={addingSection || !newSectionName.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
             >
-              {addingSection ? 'Creating…' : 'Create'}
+              {addingSection ? 'Creating…' : 'Create section'}
             </button>
           </form>
         </section>
@@ -214,24 +262,36 @@ export default function AdminPanel({ onLogout }) {
         {/* Unsectioned images */}
         {unsectioned.length > 0 && (
           <ImageTable
-            title="Unsectioned"
+            title="Unsectioned images"
             images={unsectioned}
             sections={sections}
             onChanged={load}
           />
         )}
 
-        {/* Sections */}
-        {sections.map((section) => (
-          <SectionBlock
-            key={section.id}
-            section={section}
+        {/* Groups with their sections */}
+        {supersections.map((ss) => (
+          <SuperSectionBlock
+            key={ss.id}
+            supersection={ss}
             sections={sections}
+            supersections={supersections}
             onChanged={load}
           />
         ))}
 
-        {sections.length === 0 && unsectioned.length === 0 && (
+        {/* Standalone sections (not assigned to any group) */}
+        {sections.filter((s) => !s.supersection_id).map((section) => (
+          <SectionBlock
+            key={section.id}
+            section={section}
+            sections={sections}
+            supersections={supersections}
+            onChanged={load}
+          />
+        ))}
+
+        {supersections.length === 0 && sections.length === 0 && unsectioned.length === 0 && (
           <p className="text-center text-gray-400 py-20">No images yet. Upload a folder above or create a section.</p>
         )}
 
