@@ -5,6 +5,11 @@ CREATE TABLE IF NOT EXISTS sections (
   sort_order INT DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  `key`   VARCHAR(100) PRIMARY KEY,
+  `value` TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS images (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   section_id  INT,

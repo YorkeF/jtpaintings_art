@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ImageTable from './ImageTable.jsx'
 import SectionBlock from './SectionBlock.jsx'
+import SettingsPanel from './SettingsPanel.jsx'
 
 export default function AdminPanel({ onLogout }) {
   const [sections, setSections] = useState([])
@@ -233,6 +234,8 @@ export default function AdminPanel({ onLogout }) {
         {sections.length === 0 && unsectioned.length === 0 && (
           <p className="text-center text-gray-400 py-20">No images yet. Upload a folder above or create a section.</p>
         )}
+
+        <SettingsPanel />
       </main>
     </div>
   )

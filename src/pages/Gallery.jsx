@@ -41,9 +41,14 @@ export default function Gallery() {
       <header className="bg-white shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">JT Paintings</h1>
-          <Link to="/admin" className="text-sm text-gray-400 hover:text-gray-600">
-            Admin
-          </Link>
+          <nav className="flex items-center gap-6">
+            <Link to="/contact" className="text-sm text-gray-600 hover:text-gray-900">
+              Contact
+            </Link>
+            <Link to="/admin" className="text-sm text-gray-400 hover:text-gray-600">
+              Admin
+            </Link>
+          </nav>
         </div>
       </header>
 
