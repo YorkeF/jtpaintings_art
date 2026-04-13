@@ -41,7 +41,7 @@ jobs:
           # Ensure directories exist on the server
           # api/ and .env live outside www/ (not web-accessible)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST \
-            "mkdir -p ~/www/dist ~/www/uploads ~/api"
+            "mkdir -p ~/www/uploads ~/api"
 
           # Write .env outside the web root (overwrites on every deploy to stay in sync)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST "cat > ~/.env" <<EOF
@@ -52,8 +52,8 @@ jobs:
           ADMIN_PASSWORD=$ADMIN_HASH
           EOF
 
-          # Deploy React build, PHP entry point and htaccess into web root
-          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r public/dist/. $SSH_USER@$SSH_HOST:~/www/dist/
+          # Deploy React build directly into web root (not a dist/ subfolder)
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r public/dist/. $SSH_USER@$SSH_HOST:~/www/
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/index.php  $SSH_USER@$SSH_HOST:~/www/index.php
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/.htaccess  $SSH_USER@$SSH_HOST:~/www/.htaccess
 

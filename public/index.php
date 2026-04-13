@@ -36,7 +36,10 @@ if ($path !== '/' && file_exists($staticFile) && is_file($staticFile)) {
 }
 
 // Everything else → React app
-$indexFile = __DIR__ . '/dist/index.html';
+// On the server, index.html is at the web root; locally it's in dist/
+$indexFile = file_exists(__DIR__ . '/index.html')
+    ? __DIR__ . '/index.html'
+    : __DIR__ . '/dist/index.html';
 if (file_exists($indexFile)) {
     readfile($indexFile);
 } else {
