@@ -40,11 +40,7 @@ export default function ImagePage() {
     if (!el) return
     const onWheel = (e) => {
       e.preventDefault()
-      setScale((s) => {
-        const next = Math.max(1, Math.min(5, s - e.deltaY * 0.001))
-        if (next <= 1) setPos({ x: 0, y: 0 })
-        return next
-      })
+      setScale((s) => Math.max(0.2, Math.min(5, s - e.deltaY * 0.001)))
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
@@ -75,9 +71,8 @@ export default function ImagePage() {
     const onTouchMove = (e) => {
       e.preventDefault()
       if (e.touches.length === 2) {
-        const next = Math.max(1, Math.min(5, touchRef.current.scale * (dist(e.touches) / touchRef.current.dist)))
+        const next = Math.max(0.2, Math.min(5, touchRef.current.scale * (dist(e.touches) / touchRef.current.dist)))
         setScale(next)
-        if (next <= 1) setPos({ x: 0, y: 0 })
       } else if (dragging.current) {
         setPos(clamp(
           e.touches[0].clientX - dragStart.current.x,
@@ -122,13 +117,10 @@ export default function ImagePage() {
   const onMouseUp = () => { dragging.current = false }
 
   const resetZoom = () => { setScale(1); setPos({ x: 0, y: 0 }) }
+  const isZoomed = scale !== 1
 
-  const zoomIn = () => setScale((s) => Math.min(5, parseFloat((s + 0.5).toFixed(1))))
-  const zoomOut = () => setScale((s) => {
-    const next = Math.max(1, parseFloat((s - 0.5).toFixed(1)))
-    if (next <= 1) setPos({ x: 0, y: 0 })
-    return next
-  })
+  const zoomIn  = () => setScale((s) => Math.min(5,   parseFloat((s + 0.25).toFixed(2))))
+  const zoomOut = () => setScale((s) => Math.max(0.2, parseFloat((s - 0.25).toFixed(2))))
 
   const images = state?.images
   const idx = state?.index ?? -1
@@ -162,7 +154,7 @@ export default function ImagePage() {
           <div className="flex-1 flex flex-col min-w-0">
             <div
               ref={containerRef}
-              className="relative overflow-hidden rounded-xl bg-gray-900 select-none"
+              className="relative overflow-hidden rounded-xl select-none"
               style={{
                 minHeight: '55vh',
                 cursor: scale > 1 ? 'grab' : 'default',
@@ -186,8 +178,8 @@ export default function ImagePage() {
                   }}
                 />
               )}
-              {scale > 1 && (
-                <p className="absolute bottom-3 right-3 text-xs text-white/60 select-none pointer-events-none">
+              {isZoomed && (
+                <p className="absolute bottom-3 right-3 text-xs text-gray-400 select-none pointer-events-none">
                   Double-click to reset
                 </p>
               )}
@@ -212,7 +204,7 @@ export default function ImagePage() {
               >
                 +
               </button>
-              {scale > 1 && (
+              {isZoomed && (
                 <button
                   onClick={resetZoom}
                   className="text-xs text-gray-400 hover:text-gray-600 ml-1"
