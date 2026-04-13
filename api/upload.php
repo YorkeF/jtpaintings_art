@@ -12,14 +12,9 @@ requireAdmin();
 $db         = getDb();
 $uploadBase = WEB_ROOT . '/uploads';
 
-// Accepts one image at a time.
-// $_FILES['file']      — the image
-// $_POST['path']       — webkitRelativePath (used to determine section)
-// $_POST['description'] — pre-read from the paired .txt file by the client
-
 $file = $_FILES['file'] ?? null;
-$path = trim($_POST['path'] ?? '');
 
+// ── Validate file ─────────────────────────────────────────────────────────────
 if (!$file || !isset($file['error'])) {
     $contentLength = $_SERVER['CONTENT_LENGTH'] ?? 'unknown';
     $postMax       = ini_get('post_max_size');
@@ -40,36 +35,72 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     jsonResponse(['error' => $phpErrors[$file['error']] ?? "PHP upload error code {$file['error']}"], 400);
 }
 
-if ($path === '') {
-    jsonResponse(['error' => 'No file path received — webkitRelativePath may be empty'], 400);
-}
-
 // HEIC files are converted client-side; only standard types should arrive
 $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'];
 
-// Parse section and filename from path: TopFolder/SectionName/file.jpg
-$parts = explode('/', str_replace('\\', '/', $path));
-array_shift($parts); // strip the top-level upload folder name
+// ── Two upload modes ──────────────────────────────────────────────────────────
+// Direct mode: admin adds a single image via the UI — section_id is explicit.
+// Path mode:   bulk folder upload — section is derived from the file's relative path.
+$directMode = array_key_exists('section_id', $_POST);
 
-$filename    = end($parts);
-$sectionName = count($parts) > 1 ? $parts[0] : null;
-$ext         = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-$basename    = pathinfo($filename, PATHINFO_FILENAME);
-$slug        = $sectionName ? slugify($sectionName) : null;
+if ($directMode) {
+    // ── Direct mode ───────────────────────────────────────────────────────────
+    $sectionId   = $_POST['section_id'] !== '' ? (int) $_POST['section_id'] : null;
+    $title       = trim($_POST['title'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $filename    = $file['name'];
+    $ext         = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $basename    = pathinfo($filename, PATHINFO_FILENAME);
 
-if (!in_array($ext, $allowedTypes)) {
-    jsonResponse(['error' => "File type .$ext not allowed"], 400);
+    if (!in_array($ext, $allowedTypes)) {
+        jsonResponse(['error' => "File type .$ext not allowed"], 400);
+    }
+
+    if ($title === '') {
+        $title = ucwords(str_replace(['-', '_'], ' ', $basename));
+    }
+
+    // Determine upload directory from section slug
+    $slug = null;
+    if ($sectionId !== null) {
+        $stmt = $db->prepare('SELECT slug FROM sections WHERE id = ?');
+        $stmt->execute([$sectionId]);
+        $slug = $stmt->fetchColumn() ?: null;
+    }
+} else {
+    // ── Path mode (bulk folder upload) ────────────────────────────────────────
+    $path = trim($_POST['path'] ?? '');
+    if ($path === '') {
+        jsonResponse(['error' => 'No file path received — webkitRelativePath may be empty'], 400);
+    }
+
+    $description = trim($_POST['description'] ?? '');
+
+    // Parse section and filename: TopFolder/SectionName/file.jpg
+    $parts = explode('/', str_replace('\\', '/', $path));
+    array_shift($parts); // strip top-level upload folder name
+
+    $filename    = end($parts);
+    $sectionName = count($parts) > 1 ? $parts[0] : null;
+    $ext         = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $basename    = pathinfo($filename, PATHINFO_FILENAME);
+    $slug        = $sectionName ? slugify($sectionName) : null;
+    $title       = ucwords(str_replace(['-', '_'], ' ', $basename));
+
+    if (!in_array($ext, $allowedTypes)) {
+        jsonResponse(['error' => "File type .$ext not allowed"], 400);
+    }
+
+    // Upsert section
+    $sectionId = null;
+    if ($slug) {
+        $stmt = $db->prepare('INSERT INTO sections (name, slug) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)');
+        $stmt->execute([$sectionName, $slug]);
+        $sectionId = (int) $db->lastInsertId();
+    }
 }
 
-// Upsert section (ON DUPLICATE KEY is safe for concurrent single-file uploads)
-$sectionId = null;
-if ($slug) {
-    $stmt = $db->prepare('INSERT INTO sections (name, slug) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)');
-    $stmt->execute([$sectionName, $slug]);
-    $sectionId = $db->lastInsertId();
-}
-
-// Save file, avoiding collisions
+// ── Save file ─────────────────────────────────────────────────────────────────
 $destDir = $uploadBase . ($slug ? '/' . $slug : '');
 if (!is_dir($destDir)) {
     mkdir($destDir, 0775, true);
@@ -87,11 +118,9 @@ if (!move_uploaded_file($file['tmp_name'], $destPath)) {
     jsonResponse(['error' => "Failed to save $filename"], 500);
 }
 
-$webPath     = '/uploads' . ($slug ? '/' . $slug : '') . '/' . $destFilename;
-$title       = ucwords(str_replace(['-', '_'], ' ', $basename));
-$description = trim($_POST['description'] ?? '');
+$webPath = '/uploads' . ($slug ? '/' . $slug : '') . '/' . $destFilename;
 
 $stmt = $db->prepare('INSERT INTO images (section_id, title, description, image_path) VALUES (?, ?, ?, ?)');
 $stmt->execute([$sectionId, $title, $description, $webPath]);
 
-jsonResponse(['id' => $db->lastInsertId()]);
+jsonResponse(['id' => (int) $db->lastInsertId()]);

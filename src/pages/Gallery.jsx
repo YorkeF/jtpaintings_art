@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Lightbox from '../components/Lightbox.jsx'
+import ImageGrid from '../components/gallery/ImageGrid.jsx'
 
 export default function Gallery() {
   const [sections, setSections] = useState([])
@@ -51,12 +52,10 @@ export default function Gallery() {
           <p className="text-center text-gray-400 py-20">No images yet.</p>
         )}
 
-        {/* Unsectioned images */}
         {unsectioned.length > 0 && (
           <ImageGrid images={unsectioned} onOpen={(i) => openLightbox(unsectioned, i)} />
         )}
 
-        {/* Sections */}
         {sections.map((section) =>
           section.images?.length > 0 ? (
             <section key={section.id}>
@@ -80,27 +79,6 @@ export default function Gallery() {
           onNext={nextImage}
         />
       )}
-    </div>
-  )
-}
-
-function ImageGrid({ images, onOpen }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {images.map((img, i) => (
-        <button
-          key={img.id}
-          onClick={() => onOpen(i)}
-          className="group aspect-square overflow-hidden rounded-lg bg-gray-200 shadow hover:shadow-md transition-shadow"
-        >
-          <img
-            src={img.image_path}
-            alt={img.title}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </button>
-      ))}
     </div>
   )
 }
