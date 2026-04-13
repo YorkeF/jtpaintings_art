@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// Each section batch can have large images — give PHP enough time
+set_time_limit(120);
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['error' => 'Method not allowed'], 405);
 }

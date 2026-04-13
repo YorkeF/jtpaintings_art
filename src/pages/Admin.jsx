@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import heic2any from 'heic2any'
 
 export default function Admin() {
   const [authed, setAuthed] = useState(null) // null = checking
@@ -71,7 +70,7 @@ function LoginForm({ onSuccess }) {
 function AdminPanel({ onLogout }) {
   const [sections, setSections] = useState([])
   const [unsectioned, setUnsectioned] = useState([])
-  const [uploadStatus, setUploadStatus] = useState(null) // null | 'converting' | 'uploading'
+  const [progress, setProgress] = useState(null) // null | { stage, label, current, total }
   const [uploadResult, setUploadResult] = useState(null)
   const fileInputRef = useRef()
 
@@ -92,52 +91,80 @@ function AdminPanel({ onLogout }) {
   }
 
   const handleFolderUpload = async (e) => {
-    const rawFiles = Array.from(e.target.files)
+    const rawFiles = Array.from(e.target.files).filter((f) => !f.name.startsWith('.'))
     if (!rawFiles.length) return
 
-    setUploadStatus('converting')
     setUploadResult(null)
 
     try {
-      // Convert any HEIC/HEIF files to JPEG in the browser before uploading
-      const files = await Promise.all(rawFiles.map(async (file) => {
-        if (!/\.(heic|heif)$/i.test(file.name)) {
-          return { file, path: file.webkitRelativePath || file.name }
+      // ── Step 1: Convert HEIC/HEIF files sequentially ──────────────────────────
+      const heicFiles = rawFiles.filter((f) => /\.(heic|heif)$/i.test(f.name))
+      const converted = []
+
+      // Lazy-load heic2any only if needed (it's a large library)
+      const heic2any = heicFiles.length > 0
+        ? (await import('heic2any')).default
+        : null
+
+      for (const [i, file] of rawFiles.entries()) {
+        if (/\.(heic|heif)$/i.test(file.name)) {
+          const heicIndex = heicFiles.indexOf(file)
+          setProgress({ stage: 'converting', label: file.name, current: heicIndex + 1, total: heicFiles.length })
+          const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+          const blob = Array.isArray(result) ? result[0] : result
+          const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg')
+          const newPath = (file.webkitRelativePath || file.name).replace(/\.(heic|heif)$/i, '.jpg')
+          converted.push({ file: new File([blob], newName, { type: 'image/jpeg' }), path: newPath })
+        } else {
+          converted.push({ file, path: file.webkitRelativePath || file.name })
         }
-        const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
-        const blob = Array.isArray(result) ? result[0] : result
-        const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg')
-        const newPath = (file.webkitRelativePath || file.name).replace(/\.(heic|heif)$/i, '.jpg')
-        return { file: new File([blob], newName, { type: 'image/jpeg' }), path: newPath }
-      }))
-
-      setUploadStatus('uploading')
-
-      const formData = new FormData()
-      files.forEach(({ file, path }) => {
-        formData.append('files[]', file)
-        formData.append('paths[]', path)
-      })
-
-      const res = await fetch('/api/upload.php', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      })
-      const text = await res.text()
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch {
-        const preview = text.replace(/<[^>]+>/g, ' ').trim().slice(0, 300)
-        data = { inserted: 0, errors: [`Server error (HTTP ${res.status})${preview ? ': ' + preview : ''}`] }
       }
-      setUploadResult(data)
-      if (data.inserted > 0) load()
+
+      // ── Step 2: Group by section so each request stays small ─────────────────
+      // Avoids PHP's max_file_uploads limit (default 20) and gives per-section progress.
+      // Section key = first subfolder after the top-level upload folder.
+      const groups = {}
+      for (const entry of converted) {
+        const parts = entry.path.replace(/\\/g, '/').split('/')
+        const key = parts.length >= 3 ? parts[1] : '__root__'
+        if (!groups[key]) groups[key] = []
+        groups[key].push(entry)
+      }
+
+      // ── Step 3: Upload one section at a time ──────────────────────────────────
+      const groupEntries = Object.entries(groups)
+      let totalInserted = 0
+      const allErrors = []
+
+      for (const [i, [key, files]] of groupEntries.entries()) {
+        const label = key === '__root__' ? 'unsectioned images' : key
+        setProgress({ stage: 'uploading', label, current: i + 1, total: groupEntries.length })
+
+        const formData = new FormData()
+        files.forEach(({ file, path }) => {
+          formData.append('files[]', file)
+          formData.append('paths[]', path)
+        })
+
+        const res = await fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: formData })
+        const text = await res.text()
+        let data
+        try {
+          data = JSON.parse(text)
+        } catch {
+          const preview = text.replace(/<[^>]+>/g, ' ').trim().slice(0, 200)
+          data = { inserted: 0, errors: [`Server error uploading "${label}" (HTTP ${res.status})${preview ? ': ' + preview : ''}`] }
+        }
+        totalInserted += data.inserted ?? 0
+        if (data.errors?.length) allErrors.push(...data.errors)
+      }
+
+      setUploadResult({ inserted: totalInserted, errors: allErrors })
+      if (totalInserted > 0) load()
     } catch (err) {
       setUploadResult({ inserted: 0, errors: [`Upload failed: ${err.message}`] })
     } finally {
-      setUploadStatus(null)
+      setProgress(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
@@ -167,19 +194,33 @@ function AdminPanel({ onLogout }) {
             <code className="bg-gray-100 px-1 rounded">.txt</code> file with the same name as an
             image to set its description.
           </p>
-          <label className="flex items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              webkitdirectory=""
-              multiple
-              onChange={handleFolderUpload}
-              disabled={uploadStatus !== null}
-              className="block text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
-            />
-            {uploadStatus === 'converting' && <span className="text-sm text-gray-500 animate-pulse">Converting HEIC files…</span>}
-            {uploadStatus === 'uploading' && <span className="text-sm text-gray-500 animate-pulse">Uploading…</span>}
-          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            webkitdirectory=""
+            multiple
+            onChange={handleFolderUpload}
+            disabled={progress !== null}
+            className="block text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
+          />
+
+          {progress && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>
+                  {progress.stage === 'converting' ? 'Converting' : 'Uploading'}{' '}
+                  <span className="font-medium text-gray-700">{progress.label}</span>
+                </span>
+                <span>{progress.current} / {progress.total}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
           {uploadResult && (
             <div className={`text-sm rounded-lg px-4 py-2 ${
               uploadResult.inserted === 0 && uploadResult.errors?.length
