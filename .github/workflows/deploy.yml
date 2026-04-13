@@ -41,7 +41,7 @@ jobs:
           # Ensure directories exist on the server
           # api/ and .env live outside www/ (not web-accessible)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST \
-            "mkdir -p ~/www/uploads ~/api"
+            "mkdir -p ~/www/uploads ~/www/api"
 
           # Write .env outside the web root (overwrites on every deploy to stay in sync)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST "cat > ~/.env" <<EOF
@@ -57,8 +57,8 @@ jobs:
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/index.php  $SSH_USER@$SSH_HOST:~/www/index.php
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/.htaccess  $SSH_USER@$SSH_HOST:~/www/.htaccess
 
-          # Deploy PHP API outside the web root
-          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r api/. $SSH_USER@$SSH_HOST:~/api/
+          # Deploy PHP API into www/api/ (nginx serves .php files directly — no rewrite rules needed)
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r api/. $SSH_USER@$SSH_HOST:~/www/api/
 
           # Deploy and run schema (idempotent — CREATE TABLE IF NOT EXISTS)
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" schema.sql $SSH_USER@$SSH_HOST:~/schema.sql

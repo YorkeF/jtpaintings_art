@@ -16,24 +16,8 @@ define('WEB_ROOT', __DIR__);
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-if (str_starts_with($path, '/api/')) {
-    // Route /api/{resource}[/{id}] to the appropriate PHP file
-    $segment = explode('/', trim($path, '/'))[1] ?? ''; // e.g. "sections", "images", "upload", "auth"
-    $apiFile = dirname(__DIR__) . '/api/' . $segment . '.php';
-    if (file_exists($apiFile)) {
-        require $apiFile;
-    } else {
-        http_response_code(404);
-        echo json_encode(['error' => 'API endpoint not found']);
-    }
-    exit;
-}
-
-// Serve static files that actually exist (images, JS, CSS, etc.)
-$staticFile = __DIR__ . $path;
-if ($path !== '/' && file_exists($staticFile) && is_file($staticFile)) {
-    return false; // Let the web server handle it (Apache/Nginx)
-}
+// API requests are served directly by nginx as www/api/*.php — no routing needed here.
+// Static files (uploads, assets) are served directly by nginx.
 
 // Everything else → React app
 // On the server, index.html is at the web root; locally it's in dist/

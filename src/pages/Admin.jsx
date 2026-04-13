@@ -5,7 +5,7 @@ export default function Admin() {
   const [authed, setAuthed] = useState(null) // null = checking
 
   useEffect(() => {
-    fetch('/api/auth?action=check', { credentials: 'include' })
+    fetch('/api/auth.php?action=check', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setAuthed(d.authenticated))
   }, [])
@@ -26,7 +26,7 @@ function LoginForm({ onSuccess }) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const res = await fetch('/api/auth?action=login', {
+    const res = await fetch('/api/auth.php?action=login', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -75,18 +75,18 @@ function AdminPanel({ onLogout }) {
   const fileInputRef = useRef()
 
   const load = () => {
-    fetch('/api/sections', { credentials: 'include' })
+    fetch('/api/sections.php', { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => setSections(Array.isArray(d) ? d : []))
-    fetch('/api/images', { credentials: 'include' })
+    fetch('/api/images.php?unsectioned=1', { credentials: 'include' })
       .then((r) => r.json())
-      .then((d) => setUnsectioned(Array.isArray(d) ? d.filter((i) => i.section_id === null) : []))
+      .then((d) => setUnsectioned(Array.isArray(d) ? d : []))
   }
 
   useEffect(load, [])
 
   const logout = async () => {
-    await fetch('/api/auth?action=logout', { credentials: 'include' })
+    await fetch('/api/auth.php?action=logout', { credentials: 'include' })
     onLogout()
   }
 
@@ -103,7 +103,7 @@ function AdminPanel({ onLogout }) {
       formData.append('paths[]', file.webkitRelativePath || file.name)
     })
 
-    const res = await fetch('/api/upload', {
+    const res = await fetch('/api/upload.php', {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -222,7 +222,7 @@ function ImageRow({ image, sections, onChanged }) {
 
   const save = async () => {
     setSaving(true)
-    await fetch(`/api/images/${image.id}`, {
+    await fetch(`/api/images.php?id=${image.id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -236,7 +236,7 @@ function ImageRow({ image, sections, onChanged }) {
   const deleteImage = async () => {
     if (!window.confirm(`Delete "${image.title}"?`)) return
     setDeleting(true)
-    await fetch(`/api/images/${image.id}`, { method: 'DELETE', credentials: 'include' })
+    await fetch(`/api/images.php?id=${image.id}`, { method: 'DELETE', credentials: 'include' })
     onChanged()
   }
 

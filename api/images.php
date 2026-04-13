@@ -4,9 +4,8 @@ require_once __DIR__ . '/config.php';
 $method = $_SERVER['REQUEST_METHOD'];
 $db = getDb();
 
-// Extract optional {id} from path, e.g. /api/images/42
-$pathParts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
-$id = is_numeric(end($pathParts)) ? (int) end($pathParts) : null;
+// ID passed as ?id=42 query param (path-based routing not available on nginx without rewrites)
+$id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
 if ($method === 'GET') {
     if ($id) {

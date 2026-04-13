@@ -11,8 +11,8 @@ export default function Gallery() {
   useEffect(() => {
     const safe = (p) => p.then((r) => r.json()).catch(() => [])
     Promise.all([
-      safe(fetch('/api/sections')),
-      safe(fetch('/api/images?unsectioned=1')),
+      safe(fetch('/api/sections.php')),
+      safe(fetch('/api/images.php?unsectioned=1')),
     ]).then(([secs, imgs]) => {
       setSections(Array.isArray(secs) ? secs : [])
       setUnsectioned(Array.isArray(imgs) ? imgs : [])
