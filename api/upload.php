@@ -20,8 +20,28 @@ $uploadBase = WEB_ROOT . '/uploads';
 $file = $_FILES['file'] ?? null;
 $path = trim($_POST['path'] ?? '');
 
-if (!$file || $file['error'] !== UPLOAD_ERR_OK || $path === '') {
-    jsonResponse(['error' => 'Missing file or path'], 400);
+if (!$file || !isset($file['error'])) {
+    $contentLength = $_SERVER['CONTENT_LENGTH'] ?? 'unknown';
+    $postMax       = ini_get('post_max_size');
+    $uploadMax     = ini_get('upload_max_filesize');
+    jsonResponse(['error' => "No file received. post_max_size=$postMax, upload_max_filesize=$uploadMax, request=$contentLength bytes"], 400);
+}
+
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    $phpErrors = [
+        UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize (' . ini_get('upload_max_filesize') . ')',
+        UPLOAD_ERR_FORM_SIZE  => 'File exceeds form MAX_FILE_SIZE',
+        UPLOAD_ERR_PARTIAL    => 'File only partially uploaded',
+        UPLOAD_ERR_NO_FILE    => 'No file part in request',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing temp directory',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
+        UPLOAD_ERR_EXTENSION  => 'Upload blocked by a PHP extension',
+    ];
+    jsonResponse(['error' => $phpErrors[$file['error']] ?? "PHP upload error code {$file['error']}"], 400);
+}
+
+if ($path === '') {
+    jsonResponse(['error' => 'No file path received — webkitRelativePath may be empty'], 400);
 }
 
 // HEIC files are converted client-side; only standard types should arrive
