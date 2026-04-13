@@ -97,54 +97,49 @@ function AdminPanel({ onLogout }) {
     setUploadResult(null)
 
     try {
-      // ── Step 1: Convert HEIC/HEIF files sequentially ──────────────────────────
-      const heicFiles = rawFiles.filter((f) => /\.(heic|heif)$/i.test(f.name))
-      const converted = []
+      // ── Step 1: Read all .txt files into a description map ────────────────────
+      // Key: relative path without extension (lowercased) → description string
+      const descMap = {}
+      for (const f of rawFiles.filter((f) => /\.txt$/i.test(f.name))) {
+        const key = (f.webkitRelativePath || f.name).replace(/\.txt$/i, '').toLowerCase()
+        descMap[key] = await f.text()
+      }
 
-      // Lazy-load heic2any only if needed (it's a large library)
-      const heic2any = heicFiles.length > 0
-        ? (await import('heic2any')).default
-        : null
+      // ── Step 2: Collect image files (non-txt, non-hidden) ─────────────────────
+      const imageFiles = rawFiles.filter((f) => !/\.txt$/i.test(f.name))
 
-      for (const [i, file] of rawFiles.entries()) {
+      // ── Step 3: Convert HEIC/HEIF → JPEG sequentially ────────────────────────
+      const heicFiles = imageFiles.filter((f) => /\.(heic|heif)$/i.test(f.name))
+      const heic2any = heicFiles.length > 0 ? (await import('heic2any')).default : null
+
+      const readyImages = []
+      let heicDone = 0
+      for (const file of imageFiles) {
         if (/\.(heic|heif)$/i.test(file.name)) {
-          const heicIndex = heicFiles.indexOf(file)
-          setProgress({ stage: 'converting', label: file.name, current: heicIndex + 1, total: heicFiles.length })
+          setProgress({ stage: 'converting', label: file.name, current: ++heicDone, total: heicFiles.length })
           const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
           const blob = Array.isArray(result) ? result[0] : result
           const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg')
           const newPath = (file.webkitRelativePath || file.name).replace(/\.(heic|heif)$/i, '.jpg')
-          converted.push({ file: new File([blob], newName, { type: 'image/jpeg' }), path: newPath })
+          readyImages.push({ file: new File([blob], newName, { type: 'image/jpeg' }), path: newPath })
         } else {
-          converted.push({ file, path: file.webkitRelativePath || file.name })
+          readyImages.push({ file, path: file.webkitRelativePath || file.name })
         }
       }
 
-      // ── Step 2: Group by section so each request stays small ─────────────────
-      // Avoids PHP's max_file_uploads limit (default 20) and gives per-section progress.
-      // Section key = first subfolder after the top-level upload folder.
-      const groups = {}
-      for (const entry of converted) {
-        const parts = entry.path.replace(/\\/g, '/').split('/')
-        const key = parts.length >= 3 ? parts[1] : '__root__'
-        if (!groups[key]) groups[key] = []
-        groups[key].push(entry)
-      }
+      // ── Step 4: Upload images one at a time ───────────────────────────────────
+      let inserted = 0
+      const errors = []
 
-      // ── Step 3: Upload one section at a time ──────────────────────────────────
-      const groupEntries = Object.entries(groups)
-      let totalInserted = 0
-      const allErrors = []
+      for (const [i, { file, path }] of readyImages.entries()) {
+        setProgress({ stage: 'uploading', label: file.name, current: i + 1, total: readyImages.length })
 
-      for (const [i, [key, files]] of groupEntries.entries()) {
-        const label = key === '__root__' ? 'unsectioned images' : key
-        setProgress({ stage: 'uploading', label, current: i + 1, total: groupEntries.length })
+        const description = descMap[path.replace(/\.[^.]+$/, '').toLowerCase()] ?? ''
 
         const formData = new FormData()
-        files.forEach(({ file, path }) => {
-          formData.append('files[]', file)
-          formData.append('paths[]', path)
-        })
+        formData.append('file', file)
+        formData.append('path', path)
+        formData.append('description', description)
 
         const res = await fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: formData })
         const text = await res.text()
@@ -153,14 +148,15 @@ function AdminPanel({ onLogout }) {
           data = JSON.parse(text)
         } catch {
           const preview = text.replace(/<[^>]+>/g, ' ').trim().slice(0, 200)
-          data = { inserted: 0, errors: [`Server error uploading "${label}" (HTTP ${res.status})${preview ? ': ' + preview : ''}`] }
+          data = { error: `Server error (HTTP ${res.status})${preview ? ': ' + preview : ''}` }
         }
-        totalInserted += data.inserted ?? 0
-        if (data.errors?.length) allErrors.push(...data.errors)
+
+        if (data.error) errors.push(`${file.name}: ${data.error}`)
+        else inserted++
       }
 
-      setUploadResult({ inserted: totalInserted, errors: allErrors })
-      if (totalInserted > 0) load()
+      setUploadResult({ inserted, errors })
+      if (inserted > 0) load()
     } catch (err) {
       setUploadResult({ inserted: 0, errors: [`Upload failed: ${err.message}`] })
     } finally {

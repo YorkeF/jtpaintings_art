@@ -11,6 +11,16 @@ if (file_exists($envFile)) {
     }
 }
 
+// WEB_ROOT: absolute path to the publicly-served directory.
+// API files are served directly by nginx (index.php is never in the call chain),
+// so this cannot rely on index.php defining it.
+// On the server: api/ lives inside www/  → parent of api/ = www/ (the web root)
+// Local dev:     api/ is a sibling of public/ → parent contains a public/ folder
+if (!defined('WEB_ROOT')) {
+    $parent = dirname(__DIR__);
+    define('WEB_ROOT', is_dir($parent . '/public') ? $parent . '/public' : $parent);
+}
+
 session_start();
 
 function getDb(): PDO {

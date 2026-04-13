@@ -11,9 +11,6 @@ if ($_SERVER['HTTP_HOST'] === 'localhost' || str_contains($_SERVER['HTTP_HOST'] 
     }
 }
 
-// Absolute path to this directory — used by API files to locate uploads
-define('WEB_ROOT', __DIR__);
-
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // API requests are served directly by nginx as www/api/*.php — no routing needed here.
