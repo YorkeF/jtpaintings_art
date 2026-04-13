@@ -14,7 +14,19 @@ CREATE TABLE IF NOT EXISTS sections (
 );
 
 -- Idempotent: adds supersection_id to sections if the table already existed before this migration
-ALTER TABLE sections ADD COLUMN IF NOT EXISTS supersection_id INT NULL AFTER id;
+SET @col_exists = (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME   = 'sections'
+    AND COLUMN_NAME  = 'supersection_id'
+);
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE sections ADD COLUMN supersection_id INT NULL AFTER id',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS settings (
   `key`   VARCHAR(100) PRIMARY KEY,
