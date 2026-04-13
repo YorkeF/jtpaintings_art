@@ -1,6 +1,49 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// ── Thumbnail generation ───────────────────────────────────────────────────────
+// Saves {basename}_thumb.jpg alongside the original at max 900px wide, quality 80.
+// Silently skips if GD is unavailable or the format isn't supported.
+function generateThumbnail(string $srcPath, string $destDir, string $basename, string $ext): void
+{
+    if (!extension_loaded('gd')) return;
+
+    $creators = [
+        'jpg'  => 'imagecreatefromjpeg',
+        'jpeg' => 'imagecreatefromjpeg',
+        'png'  => 'imagecreatefrompng',
+        'gif'  => 'imagecreatefromgif',
+        'webp' => 'imagecreatefromwebp',
+        'avif' => function_exists('imagecreatefromavif') ? 'imagecreatefromavif' : null,
+    ];
+
+    $creator = $creators[$ext] ?? null;
+    if (!$creator || !function_exists($creator)) return;
+
+    $src = @$creator($srcPath);
+    if (!$src) return;
+
+    $origW = imagesx($src);
+    $origH = imagesy($src);
+    $maxW  = 900;
+
+    if ($origW > $maxW) {
+        $newW  = $maxW;
+        $newH  = (int) round($origH * ($maxW / $origW));
+        $thumb = imagescale($src, $newW, $newH, IMG_BICUBIC);
+    } else {
+        // Image already fits — still save a JPEG copy so the frontend can rely on the convention
+        $thumb = $src;
+        $src   = null; // avoid double-destroy
+    }
+
+    if ($thumb) {
+        imagejpeg($thumb, $destDir . '/' . $basename . '_thumb.jpg', 80);
+        imagedestroy($thumb);
+    }
+    if ($src) imagedestroy($src);
+}
+
 set_time_limit(60);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -119,6 +162,9 @@ if (!move_uploaded_file($file['tmp_name'], $destPath)) {
 }
 
 $webPath = '/uploads' . ($slug ? '/' . $slug : '') . '/' . $destFilename;
+
+// ── Generate thumbnail ────────────────────────────────────────────────────────
+generateThumbnail($destPath, $destDir, $basename, $ext);
 
 $stmt = $db->prepare('INSERT INTO images (section_id, title, description, image_path) VALUES (?, ?, ?, ?)');
 $stmt->execute([$sectionId, $title, $description, $webPath]);

@@ -6,6 +6,7 @@ export default function ImageRow({ image, sections, onChanged }) {
   const [description, setDescription] = useState(image.description || '')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const save = async () => {
     setSaving(true)
@@ -21,7 +22,6 @@ export default function ImageRow({ image, sections, onChanged }) {
   }
 
   const deleteImage = async () => {
-    if (!window.confirm(`Delete "${image.title}"?`)) return
     setDeleting(true)
     await fetch(`/api/images.php?id=${image.id}`, { method: 'DELETE', credentials: 'include' })
     onChanged()
@@ -74,20 +74,40 @@ export default function ImageRow({ image, sections, onChanged }) {
         )}
       </div>
       {!editing && (
-        <div className="flex gap-2 flex-shrink-0">
-          <button
-            onClick={() => setEditing(true)}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            Edit
-          </button>
-          <button
-            onClick={deleteImage}
-            disabled={deleting}
-            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
-          >
-            {deleting ? '…' : 'Delete'}
-          </button>
+        <div className="flex gap-2 flex-shrink-0 items-center">
+          {confirmDelete ? (
+            <>
+              <span className="text-sm text-gray-600">Delete?</span>
+              <button
+                onClick={deleteImage}
+                disabled={deleting}
+                className="text-sm text-red-600 font-medium hover:text-red-800 disabled:opacity-50"
+              >
+                {deleting ? '…' : 'Yes'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                No
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setEditing(true)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-sm text-red-500 hover:text-red-700"
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
       )}
     </li>

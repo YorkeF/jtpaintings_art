@@ -7,6 +7,7 @@ export default function SectionBlock({ section, sections, onChanged }) {
   const [name, setName] = useState(section.name)
   const [saving, setSaving] = useState(false)
   const [showAddImage, setShowAddImage] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const saveSection = async () => {
     if (!name.trim()) return
@@ -22,9 +23,13 @@ export default function SectionBlock({ section, sections, onChanged }) {
     onChanged()
   }
 
-  const deleteSection = async () => {
-    if (!window.confirm(`Delete section "${section.name}"? Images will become unsectioned.`)) return
-    await fetch(`/api/sections.php?id=${section.id}`, { method: 'DELETE', credentials: 'include' })
+  const deleteSection = async (deleteImages) => {
+    await fetch(`/api/sections.php?id=${section.id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delete_images: deleteImages }),
+    })
     onChanged()
   }
 
@@ -68,12 +73,36 @@ export default function SectionBlock({ section, sections, onChanged }) {
             >
               Rename
             </button>
-            <button
-              onClick={deleteSection}
-              className="text-sm text-red-500 hover:text-red-700"
-            >
-              Delete
-            </button>
+            {confirmDelete ? (
+              <>
+                <span className="text-sm text-gray-600">Delete images too?</span>
+                <button
+                  onClick={() => deleteSection(true)}
+                  className="text-sm text-red-600 font-medium hover:text-red-800"
+                >
+                  Delete all
+                </button>
+                <button
+                  onClick={() => deleteSection(false)}
+                  className="text-sm text-yellow-600 font-medium hover:text-yellow-800"
+                >
+                  Keep unsectioned
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-sm text-red-500 hover:text-red-700"
+              >
+                Delete
+              </button>
+            )}
           </>
         )}
       </div>

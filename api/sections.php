@@ -38,8 +38,25 @@ if ($method === 'PUT' && $id) {
 
 if ($method === 'DELETE' && $id) {
     requireAdmin();
-    // Move images to unsectioned rather than deleting them
-    $db->prepare('UPDATE images SET section_id = NULL WHERE section_id = ?')->execute([$id]);
+    $body        = json_decode(file_get_contents('php://input'), true) ?? [];
+    $deleteImages = !empty($body['delete_images']);
+
+    if ($deleteImages) {
+        // Delete image files from disk, then rows
+        $images = $db->prepare('SELECT image_path FROM images WHERE section_id = ?');
+        $images->execute([$id]);
+        foreach ($images->fetchAll() as $img) {
+            $file = WEB_ROOT . $img['image_path'];
+            if (file_exists($file)) unlink($file);
+            // Remove thumbnail if it exists
+            $thumb = preg_replace('/(\.[^.]+)$/', '_thumb.jpg', $file);
+            if ($thumb !== $file && file_exists($thumb)) unlink($thumb);
+        }
+        $db->prepare('DELETE FROM images WHERE section_id = ?')->execute([$id]);
+    } else {
+        $db->prepare('UPDATE images SET section_id = NULL WHERE section_id = ?')->execute([$id]);
+    }
+
     $db->prepare('DELETE FROM sections WHERE id = ?')->execute([$id]);
     jsonResponse(['success' => true]);
 }
