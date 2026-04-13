@@ -54,8 +54,9 @@ jobs:
 
           # Deploy React build directly into web root (not a dist/ subfolder)
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r public/dist/. $SSH_USER@$SSH_HOST:~/www/
-          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/index.php  $SSH_USER@$SSH_HOST:~/www/index.php
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/index.php   $SSH_USER@$SSH_HOST:~/www/index.php
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/.htaccess  $SSH_USER@$SSH_HOST:~/www/.htaccess
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/.user.ini  $SSH_USER@$SSH_HOST:~/www/.user.ini
 
           # Deploy PHP API into www/api/ (nginx serves .php files directly — no rewrite rules needed)
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r api/. $SSH_USER@$SSH_HOST:~/www/api/
