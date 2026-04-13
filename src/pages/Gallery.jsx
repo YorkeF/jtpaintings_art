@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import Lightbox from '../components/Lightbox.jsx'
+import { useNavigate } from 'react-router-dom'
 import SiteHeader from '../components/gallery/SiteHeader.jsx'
 import ImageGrid from '../components/gallery/ImageGrid.jsx'
 
 export default function Gallery() {
   const [sections, setSections] = useState([])
   const [unsectioned, setUnsectioned] = useState([])
-  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 })
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const safe = (p) => p.then((r) => r.json()).catch(() => [])
@@ -15,19 +15,14 @@ export default function Gallery() {
       safe(fetch('/api/sections.php')),
       safe(fetch('/api/images.php?unsectioned=1')),
     ]).then(([secs, imgs]) => {
-      // Only show sections not assigned to a supersection
       setSections(Array.isArray(secs) ? secs.filter((s) => !s.supersection_id) : [])
       setUnsectioned(Array.isArray(imgs) ? imgs : [])
       setLoading(false)
     })
   }, [])
 
-  const openLightbox = (images, index) => setLightbox({ open: true, images, index })
-  const closeLightbox = () => setLightbox((lb) => ({ ...lb, open: false }))
-  const prevImage = () =>
-    setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
-  const nextImage = () =>
-    setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
+  const open = (images, index) =>
+    navigate(`/image/${images[index].id}`, { state: { images, index } })
 
   const allEmpty = sections.every((s) => !s.images?.length) && unsectioned.length === 0
 
@@ -41,7 +36,7 @@ export default function Gallery() {
         ) : (
           <>
             {unsectioned.length > 0 && (
-              <ImageGrid images={unsectioned} onOpen={(i) => openLightbox(unsectioned, i)} />
+              <ImageGrid images={unsectioned} onOpen={(i) => open(unsectioned, i)} />
             )}
 
             {sections.map((section) =>
@@ -52,7 +47,7 @@ export default function Gallery() {
                   </h2>
                   <ImageGrid
                     images={section.images}
-                    onOpen={(i) => openLightbox(section.images, i)}
+                    onOpen={(i) => open(section.images, i)}
                   />
                 </section>
               ) : null
@@ -60,15 +55,6 @@ export default function Gallery() {
           </>
         )}
       </main>
-
-      {lightbox.open && (
-        <Lightbox
-          image={lightbox.images[lightbox.index]}
-          onClose={closeLightbox}
-          onPrev={prevImage}
-          onNext={nextImage}
-        />
-      )}
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Navigate } from 'react-router-dom'
-import Lightbox from '../components/Lightbox.jsx'
+import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import SiteHeader from '../components/gallery/SiteHeader.jsx'
 import ImageGrid from '../components/gallery/ImageGrid.jsx'
 
@@ -8,7 +7,7 @@ export default function SuperSectionPage() {
   const { slug } = useParams()
   const [supersection, setSupersection] = useState(null)
   const [notFound, setNotFound] = useState(false)
-  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 })
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetch('/api/supersections.php')
@@ -22,17 +21,13 @@ export default function SuperSectionPage() {
       .catch(() => setNotFound(true))
   }, [slug])
 
-  const openLightbox = (images, index) => setLightbox({ open: true, images, index })
-  const closeLightbox = () => setLightbox((lb) => ({ ...lb, open: false }))
-  const prevImage = () =>
-    setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
-  const nextImage = () =>
-    setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
-
   if (notFound) return <Navigate to="/" replace />
 
   const sections = supersection?.sections ?? []
   const allEmpty = sections.every((s) => !s.images?.length)
+
+  const open = (images, index) =>
+    navigate(`/image/${images[index].id}`, { state: { images, index } })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,21 +50,12 @@ export default function SuperSectionPage() {
               </h2>
               <ImageGrid
                 images={section.images}
-                onOpen={(i) => openLightbox(section.images, i)}
+                onOpen={(i) => open(section.images, i)}
               />
             </section>
           ) : null
         )}
       </main>
-
-      {lightbox.open && (
-        <Lightbox
-          image={lightbox.images[lightbox.index]}
-          onClose={closeLightbox}
-          onPrev={prevImage}
-          onNext={nextImage}
-        />
-      )}
     </div>
   )
 }
