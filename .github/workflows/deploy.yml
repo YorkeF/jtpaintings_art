@@ -60,6 +60,6 @@ jobs:
 
           # Run schema (CREATE DATABASE/TABLE IF NOT EXISTS — safe to run on every deploy)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST \
-            "mysql -h '$DB_HOST' -u '$DB_USER' -p'$DB_PASS' < ~/www/schema.sql"
+            "mysql -h '$DB_HOST' -u '$DB_USER' -p'$DB_PASS' '$DB_NAME' < ~/www/schema.sql"
 
           # uploads/ is intentionally not deployed — images live only on the server
