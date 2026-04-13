@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 requireAdmin();
 
 $db = getDb();
-$uploadBase = dirname(__DIR__) . '/public/uploads';
+$uploadBase = WEB_ROOT . '/uploads';
 
 // Files come in as $_FILES['files'] with multiple entries.
 // Each file's relative path is sent as $_POST['paths'][n].

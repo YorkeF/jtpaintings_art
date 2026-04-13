@@ -62,7 +62,7 @@ if ($method === 'DELETE' && $id) {
     if (!$image) jsonResponse(['error' => 'Not found'], 404);
 
     // Delete file from filesystem
-    $filePath = dirname(__DIR__) . '/public/' . ltrim($image['image_path'], '/');
+    $filePath = WEB_ROOT . '/' . ltrim($image['image_path'], '/');
     if (file_exists($filePath)) {
         unlink($filePath);
     }

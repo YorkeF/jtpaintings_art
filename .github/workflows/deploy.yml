@@ -39,11 +39,12 @@ jobs:
           ADMIN_HASH=$(php -r "echo password_hash('$ADMIN_PASSWORD', PASSWORD_DEFAULT);")
 
           # Ensure directories exist on the server
+          # api/ and .env live outside www/ (not web-accessible)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST \
-            "mkdir -p ~/www/dist ~/www/api ~/www/uploads"
+            "mkdir -p ~/www/dist ~/www/uploads ~/api"
 
-          # Write .env on the server from secrets (overwrites on every deploy to stay in sync)
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST "cat > ~/www/.env" <<EOF
+          # Write .env outside the web root (overwrites on every deploy to stay in sync)
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST "cat > ~/.env" <<EOF
           DB_HOST=$DB_HOST
           DB_NAME=$DB_NAME
           DB_USER=$DB_USER
@@ -51,15 +52,17 @@ jobs:
           ADMIN_PASSWORD=$ADMIN_HASH
           EOF
 
-          # Deploy files
+          # Deploy React build, PHP entry point and htaccess into web root
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r public/dist/. $SSH_USER@$SSH_HOST:~/www/dist/
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/index.php  $SSH_USER@$SSH_HOST:~/www/index.php
           scp -i ~/.ssh/deploy_key -P "$SSH_PORT" public/.htaccess  $SSH_USER@$SSH_HOST:~/www/.htaccess
-          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r api/.           $SSH_USER@$SSH_HOST:~/www/api/
-          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" schema.sql         $SSH_USER@$SSH_HOST:~/www/schema.sql
 
-          # Run schema (CREATE DATABASE/TABLE IF NOT EXISTS — safe to run on every deploy)
+          # Deploy PHP API outside the web root
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" -r api/. $SSH_USER@$SSH_HOST:~/api/
+
+          # Deploy and run schema (idempotent — CREATE TABLE IF NOT EXISTS)
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" schema.sql $SSH_USER@$SSH_HOST:~/schema.sql
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" $SSH_USER@$SSH_HOST \
-            "mysql -h '$DB_HOST' -u '$DB_USER' -p'$DB_PASS' '$DB_NAME' < ~/www/schema.sql"
+            "mysql -h '$DB_HOST' -u '$DB_USER' -p'$DB_PASS' '$DB_NAME' < ~/schema.sql"
 
-          # uploads/ is intentionally not deployed — images live only on the server
+          # ~/www/uploads/ is intentionally not deployed — images live only on the server
