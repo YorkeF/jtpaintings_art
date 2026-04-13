@@ -37,6 +37,7 @@ $sectionMap  = []; // slug => section row
 $imageFiles  = []; // ['section_slug' => slug|null, 'basename' => ..., 'tmp' => ...]
 $textFiles   = []; // ['section_slug' => slug|null, 'basename' => ..., 'content' => ...]
 
+// HEIC files are converted to JPEG client-side before upload, so only standard types arrive here
 $allowedImageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'];
 
 foreach ($fileList as $f) {

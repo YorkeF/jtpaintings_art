@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import heic2any from 'heic2any'
 
 export default function Admin() {
   const [authed, setAuthed] = useState(null) // null = checking
@@ -70,7 +71,7 @@ function LoginForm({ onSuccess }) {
 function AdminPanel({ onLogout }) {
   const [sections, setSections] = useState([])
   const [unsectioned, setUnsectioned] = useState([])
-  const [uploading, setUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState(null) // null | 'converting' | 'uploading'
   const [uploadResult, setUploadResult] = useState(null)
   const fileInputRef = useRef()
 
@@ -91,29 +92,54 @@ function AdminPanel({ onLogout }) {
   }
 
   const handleFolderUpload = async (e) => {
-    const files = Array.from(e.target.files)
-    if (!files.length) return
+    const rawFiles = Array.from(e.target.files)
+    if (!rawFiles.length) return
 
-    setUploading(true)
+    setUploadStatus('converting')
     setUploadResult(null)
 
-    const formData = new FormData()
-    files.forEach((file, i) => {
-      formData.append('files[]', file)
-      formData.append('paths[]', file.webkitRelativePath || file.name)
-    })
+    try {
+      // Convert any HEIC/HEIF files to JPEG in the browser before uploading
+      const files = await Promise.all(rawFiles.map(async (file) => {
+        if (!/\.(heic|heif)$/i.test(file.name)) {
+          return { file, path: file.webkitRelativePath || file.name }
+        }
+        const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
+        const blob = Array.isArray(result) ? result[0] : result
+        const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg')
+        const newPath = (file.webkitRelativePath || file.name).replace(/\.(heic|heif)$/i, '.jpg')
+        return { file: new File([blob], newName, { type: 'image/jpeg' }), path: newPath }
+      }))
 
-    const res = await fetch('/api/upload.php', {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    })
-    const data = await res.json()
-    setUploading(false)
-    setUploadResult(data)
-    load()
-    // reset input
-    if (fileInputRef.current) fileInputRef.current.value = ''
+      setUploadStatus('uploading')
+
+      const formData = new FormData()
+      files.forEach(({ file, path }) => {
+        formData.append('files[]', file)
+        formData.append('paths[]', path)
+      })
+
+      const res = await fetch('/api/upload.php', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      const text = await res.text()
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch {
+        const preview = text.replace(/<[^>]+>/g, ' ').trim().slice(0, 300)
+        data = { inserted: 0, errors: [`Server error (HTTP ${res.status})${preview ? ': ' + preview : ''}`] }
+      }
+      setUploadResult(data)
+      if (data.inserted > 0) load()
+    } catch (err) {
+      setUploadResult({ inserted: 0, errors: [`Upload failed: ${err.message}`] })
+    } finally {
+      setUploadStatus(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -148,18 +174,28 @@ function AdminPanel({ onLogout }) {
               webkitdirectory=""
               multiple
               onChange={handleFolderUpload}
-              disabled={uploading}
+              disabled={uploadStatus !== null}
               className="block text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
             />
-            {uploading && <span className="text-sm text-gray-500 animate-pulse">Uploading…</span>}
+            {uploadStatus === 'converting' && <span className="text-sm text-gray-500 animate-pulse">Converting HEIC files…</span>}
+            {uploadStatus === 'uploading' && <span className="text-sm text-gray-500 animate-pulse">Uploading…</span>}
           </label>
           {uploadResult && (
-            <div className={`text-sm rounded-lg px-4 py-2 ${uploadResult.errors?.length ? 'bg-yellow-50 text-yellow-800' : 'bg-green-50 text-green-800'}`}>
-              {uploadResult.inserted} image(s) added.
+            <div className={`text-sm rounded-lg px-4 py-2 ${
+              uploadResult.inserted === 0 && uploadResult.errors?.length
+                ? 'bg-red-50 text-red-800'
+                : uploadResult.errors?.length
+                ? 'bg-yellow-50 text-yellow-800'
+                : 'bg-green-50 text-green-800'
+            }`}>
+              {uploadResult.inserted > 0 && <p>{uploadResult.inserted} image(s) added.</p>}
               {uploadResult.errors?.length > 0 && (
                 <ul className="mt-1 list-disc list-inside">
                   {uploadResult.errors.map((e, i) => <li key={i}>{e}</li>)}
                 </ul>
+              )}
+              {uploadResult.inserted === 0 && !uploadResult.errors?.length && (
+                <p>No images found in the selected folder.</p>
               )}
             </div>
           )}
