@@ -13,7 +13,18 @@ CREATE TABLE IF NOT EXISTS sections (
   sort_order       INT DEFAULT 0
 );
 
--- Idempotent: adds supersection_id to sections if the table already existed before this migration
+-- Idempotent migrations for columns added after initial deploy
+
+-- col_span / row_span on images (grid size in gallery)
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'col_span');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN col_span TINYINT NOT NULL DEFAULT 1', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'row_span');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN row_span TINYINT NOT NULL DEFAULT 1', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- supersection_id on sections
 SET @col_exists = (
   SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE()

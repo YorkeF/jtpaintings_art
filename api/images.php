@@ -41,13 +41,17 @@ if ($method === 'POST') {
 
 if ($method === 'PUT' && $id) {
     requireAdmin();
-    $body = json_decode(file_get_contents('php://input'), true);
-    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ? WHERE id = ?');
+    $body    = json_decode(file_get_contents('php://input'), true);
+    $colSpan = isset($body['col_span']) ? max(1, min(6, (int) $body['col_span'])) : 1;
+    $rowSpan = isset($body['row_span']) ? max(1, min(6, (int) $body['row_span'])) : 1;
+    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ? WHERE id = ?');
     $stmt->execute([
         $body['title'],
         $body['description'] ?? '',
         $body['section_id'] ?? null,
         $body['sort_order'] ?? 0,
+        $colSpan,
+        $rowSpan,
         $id,
     ]);
     jsonResponse(['success' => true]);
