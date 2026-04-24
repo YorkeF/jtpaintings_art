@@ -14,6 +14,7 @@ export default function ImageRow({ image, sections, onChanged }) {
   const [arH, setArH] = useState(image.ar_h || 9)
   const [arSize, setArSize] = useState(parseFloat(image.ar_size) || 1)
   const [fullWidth, setFullWidth] = useState(image.full_width == 1)
+  const [marginTop, setMarginTop] = useState(parseInt(image.margin_top) || 0)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -31,6 +32,7 @@ export default function ImageRow({ image, sections, onChanged }) {
     setArH(image.ar_h || 9)
     setArSize(parseFloat(image.ar_size) || 1)
     setFullWidth(image.full_width == 1)
+    setMarginTop(parseInt(image.margin_top) || 0)
   }
 
   const save = async () => {
@@ -53,6 +55,7 @@ export default function ImageRow({ image, sections, onChanged }) {
         ar_h: arH,
         ar_size: arSize,
         full_width: fullWidth,
+        margin_top: marginTop,
       }),
     })
     setSaving(false)
@@ -227,6 +230,24 @@ export default function ImageRow({ image, sections, onChanged }) {
               </div>
             )}
 
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-1 text-xs text-gray-600">
+                <span className="font-medium flex items-center gap-1">
+                  Top margin
+                  <Tooltip text="Adds vertical space above this thumbnail in pixels (default 0). Useful for nudging an image down to align with neighbours." />
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  max={500}
+                  value={marginTop}
+                  onChange={(e) => setMarginTop(Math.max(0, Math.min(500, parseInt(e.target.value) || 0)))}
+                  className="w-16 border border-gray-300 rounded px-1 py-0.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <span className="text-gray-400">px</span>
+              </label>
+            </div>
+
             <div className="flex gap-2">
               <button
                 onClick={save}
@@ -266,6 +287,11 @@ export default function ImageRow({ image, sections, onChanged }) {
               {image.ar_mode != 1 && image.full_width == 1 && (
                 <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                   full-width
+                </span>
+              )}
+              {parseInt(image.margin_top) > 0 && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                  +{image.margin_top}px
                 </span>
               )}
               {image.object_fit && image.object_fit !== 'cover' && (
