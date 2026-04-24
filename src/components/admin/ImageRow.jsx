@@ -9,7 +9,7 @@ export default function ImageRow({ image, sections, onChanged }) {
   const [rowSpan, setRowSpan] = useState(image.row_span || 1)
   const [gridRow, setGridRow] = useState(image.grid_row ? String(image.grid_row) : '')
   const [objectFit, setObjectFit] = useState(image.object_fit || 'cover')
-  const [arMode, setArMode] = useState(!!image.ar_mode)
+  const [arMode, setArMode] = useState(image.ar_mode == 1)
   const [arW, setArW] = useState(image.ar_w || 16)
   const [arH, setArH] = useState(image.ar_h || 9)
   const [arSize, setArSize] = useState(parseFloat(image.ar_size) || 1)
@@ -25,7 +25,7 @@ export default function ImageRow({ image, sections, onChanged }) {
     setRowSpan(image.row_span || 1)
     setGridRow(image.grid_row ? String(image.grid_row) : '')
     setObjectFit(image.object_fit || 'cover')
-    setArMode(!!image.ar_mode)
+    setArMode(image.ar_mode == 1)
     setArW(image.ar_w || 16)
     setArH(image.ar_h || 9)
     setArSize(parseFloat(image.ar_size) || 1)
@@ -63,7 +63,7 @@ export default function ImageRow({ image, sections, onChanged }) {
     onChanged()
   }
 
-  const spanBadge = !image.ar_mode && (image.col_span > 1 || image.row_span > 1)
+  const spanBadge = image.ar_mode != 1 && (image.col_span > 1 || image.row_span > 1)
     ? `${image.col_span || 1}×${image.row_span || 1}`
     : null
 
@@ -233,7 +233,7 @@ export default function ImageRow({ image, sections, onChanged }) {
           <>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-medium text-gray-800 truncate">{image.title}</p>
-              {image.ar_mode ? (
+              {image.ar_mode == 1 ? (
                 <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                   {image.ar_w || 16}:{image.ar_h || 9} ×{parseFloat(image.ar_size) || 1}
                 </span>
@@ -244,7 +244,7 @@ export default function ImageRow({ image, sections, onChanged }) {
                   </span>
                 )
               )}
-              {!image.ar_mode && image.grid_row && (
+              {image.ar_mode != 1 && image.grid_row && (
                 <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                   row {image.grid_row}
                 </span>

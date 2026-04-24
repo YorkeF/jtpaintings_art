@@ -5,7 +5,7 @@ function thumbSrc(imagePath) {
 export default function ImageCell({ img, onClick }) {
   const colSpan = img.col_span || 1
   const rowSpan = img.row_span || 1
-  const arMode = !!img.ar_mode
+  const arMode = img.ar_mode == 1
 
   // Width formula for ar_mode flex container:
   // Each "size unit" is 1/4 of the row. With gap=0.75rem, the exact width per unit
