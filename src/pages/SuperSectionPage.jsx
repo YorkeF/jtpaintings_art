@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Navigate, useNavigate } from 'react-router-dom'
+import { useParams, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import SiteHeader from '../components/gallery/SiteHeader.jsx'
 import ImageGrid from '../components/gallery/ImageGrid.jsx'
 
@@ -8,6 +8,7 @@ export default function SuperSectionPage() {
   const [supersection, setSupersection] = useState(null)
   const [notFound, setNotFound] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     fetch('/api/supersections.php')
@@ -20,6 +21,12 @@ export default function SuperSectionPage() {
       })
       .catch(() => setNotFound(true))
   }, [slug])
+
+  useEffect(() => {
+    const target = location.state?.scrollTo || (location.hash ? location.hash.slice(1) : null)
+    if (!target || !supersection) return
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' })
+  }, [supersection, location.state?.scrollTo, location.hash])
 
   if (notFound) return <Navigate to="/" replace />
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 export default function SiteHeader() {
   const [supersections, setSupersections] = useState([])
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetch('/api/supersections.php')
@@ -37,13 +38,19 @@ export default function SiteHeader() {
                   <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
                     <div className="bg-white rounded-lg shadow-lg border border-gray-100 py-1 min-w-max">
                       {sections.map((section) => (
-                        <a
+                        <button
                           key={section.id}
-                          href={`/${ss.slug}#${section.slug}`}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap"
+                          onClick={() => {
+                            if (pathname === `/${ss.slug}`) {
+                              document.getElementById(section.slug)?.scrollIntoView({ behavior: 'smooth' })
+                            } else {
+                              navigate(`/${ss.slug}`, { state: { scrollTo: section.slug } })
+                            }
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap"
                         >
                           {section.name}
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
