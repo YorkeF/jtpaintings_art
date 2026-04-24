@@ -260,14 +260,12 @@ export default function AdminPanel({ onLogout }) {
         </section>
 
         {/* Unsectioned images */}
-        {unsectioned.length > 0 && (
-          <ImageTable
-            title="Unsectioned images"
-            images={unsectioned}
-            sections={sections}
-            onChanged={load}
-          />
-        )}
+        <ImageTable
+          title="Unsectioned images"
+          images={unsectioned}
+          sections={sections}
+          onChanged={load}
+        />
 
         {/* Groups with their sections */}
         {supersections.map((ss) => (
@@ -292,7 +290,7 @@ export default function AdminPanel({ onLogout }) {
         ))}
 
         {supersections.length === 0 && sections.length === 0 && unsectioned.length === 0 && (
-          <p className="text-center text-gray-400 py-20">No images yet. Upload a folder above or create a section.</p>
+          <p className="text-center text-gray-400 py-4">No sections or groups yet. Upload a folder above or create a section.</p>
         )}
 
         <SettingsPanel />
