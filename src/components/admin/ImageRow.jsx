@@ -13,6 +13,7 @@ export default function ImageRow({ image, sections, onChanged }) {
   const [arW, setArW] = useState(image.ar_w || 16)
   const [arH, setArH] = useState(image.ar_h || 9)
   const [arSize, setArSize] = useState(parseFloat(image.ar_size) || 1)
+  const [fullWidth, setFullWidth] = useState(image.full_width == 1)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -29,6 +30,7 @@ export default function ImageRow({ image, sections, onChanged }) {
     setArW(image.ar_w || 16)
     setArH(image.ar_h || 9)
     setArSize(parseFloat(image.ar_size) || 1)
+    setFullWidth(image.full_width == 1)
   }
 
   const save = async () => {
@@ -50,6 +52,7 @@ export default function ImageRow({ image, sections, onChanged }) {
         ar_w: arW,
         ar_h: arH,
         ar_size: arSize,
+        full_width: fullWidth,
       }),
     })
     setSaving(false)
@@ -167,8 +170,9 @@ export default function ImageRow({ image, sections, onChanged }) {
                     min={1}
                     max={20}
                     value={colSpan}
+                    disabled={fullWidth}
                     onChange={(e) => setColSpan(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-                    className="w-12 border border-gray-300 rounded px-1 py-0.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-12 border border-gray-300 rounded px-1 py-0.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-40 disabled:bg-gray-50"
                   />
                 </label>
                 <label className="flex items-center gap-1 text-xs text-gray-600">
@@ -210,6 +214,16 @@ export default function ImageRow({ image, sections, onChanged }) {
                   <option value="none">none</option>
                 </select>
                 <span className="text-xs text-gray-400">(blank row = auto)</span>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fullWidth}
+                    onChange={(e) => setFullWidth(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+                  />
+                  Expand to full width
+                  <Tooltip text="Image stretches to fill the entire viewport width, breaking out of the centered page container. W is ignored when this is on; H still controls the row height." />
+                </label>
               </div>
             )}
 
@@ -247,6 +261,11 @@ export default function ImageRow({ image, sections, onChanged }) {
               {image.ar_mode != 1 && image.grid_row && (
                 <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                   row {image.grid_row}
+                </span>
+              )}
+              {image.ar_mode != 1 && image.full_width == 1 && (
+                <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                  full-width
                 </span>
               )}
               {image.object_fit && image.object_fit !== 'cover' && (

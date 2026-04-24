@@ -53,7 +53,8 @@ if ($method === 'PUT' && $id) {
     $arW       = isset($body['ar_w']) ? max(1, (int) $body['ar_w']) : 16;
     $arH       = isset($body['ar_h']) ? max(1, (int) $body['ar_h']) : 9;
     $arSize    = isset($body['ar_size']) ? max(0.1, round((float) $body['ar_size'], 2)) : 1.0;
-    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ?, grid_row = ?, object_fit = ?, ar_mode = ?, ar_w = ?, ar_h = ?, ar_size = ? WHERE id = ?');
+    $fullWidth = !empty($body['full_width']) ? 1 : 0;
+    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ?, grid_row = ?, object_fit = ?, ar_mode = ?, ar_w = ?, ar_h = ?, ar_size = ?, full_width = ? WHERE id = ?');
     $stmt->execute([
         $body['title'],
         $body['description'] ?? '',
@@ -67,6 +68,7 @@ if ($method === 'PUT' && $id) {
         $arW,
         $arH,
         $arSize,
+        $fullWidth,
         $id,
     ]);
     jsonResponse(['success' => true]);

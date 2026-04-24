@@ -6,6 +6,7 @@ export default function ImageCell({ img, onClick }) {
   const colSpan = img.col_span || 1
   const rowSpan = img.row_span || 1
   const arMode = img.ar_mode == 1
+  const fullWidth = img.full_width == 1
 
   // Width formula for ar_mode flex container:
   // Each "size unit" is 1/4 of the row. With gap=0.75rem, the exact width per unit
@@ -16,11 +17,18 @@ export default function ImageCell({ img, onClick }) {
     ? `calc(${arSize * 25}% - ${(0.75 * (1 - arSize / 4)).toFixed(4)}rem)`
     : undefined
 
+  // full_width images are rendered inside a 100vw wrapper div in ImageGrid;
+  // the cell itself just needs to fill that wrapper at the correct height.
   const style = arMode
     ? {
         width: arWidth,
         flexShrink: 0,
         aspectRatio: `${img.ar_w || 16} / ${img.ar_h || 9}`,
+      }
+    : fullWidth
+    ? {
+        width: '100%',
+        aspectRatio: `4 / ${rowSpan}`,
       }
     : {
         gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,

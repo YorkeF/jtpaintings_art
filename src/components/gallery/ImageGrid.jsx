@@ -4,10 +4,13 @@ export default function ImageGrid({ images, onOpen }) {
   const autoImages = []
   const rowGroups = new Map()
   const arImages = []
+  const fullWidthImages = []
 
   images.forEach((img, idx) => {
     if (img.ar_mode == 1) {
       arImages.push({ img, idx })
+    } else if (img.full_width == 1) {
+      fullWidthImages.push({ img, idx })
     } else if (img.grid_row) {
       if (!rowGroups.has(img.grid_row)) rowGroups.set(img.grid_row, [])
       rowGroups.get(img.grid_row).push({ img, idx })
@@ -40,6 +43,14 @@ export default function ImageGrid({ images, onOpen }) {
           ))}
         </div>
       )}
+      {fullWidthImages.map(({ img, idx }) => (
+        <div
+          key={img.id}
+          style={{ width: '100vw', marginLeft: '50%', transform: 'translateX(-50%)' }}
+        >
+          <ImageCell img={img} onClick={() => onOpen(idx)} />
+        </div>
+      ))}
       {arImages.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {arImages.map(({ img, idx }) => (
