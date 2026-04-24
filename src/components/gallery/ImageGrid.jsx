@@ -6,7 +6,7 @@ export default function ImageGrid({ images, onOpen }) {
   const arImages = []
 
   images.forEach((img, idx) => {
-    if (img.ar_mode) {
+    if (img.ar_mode == 1) {
       arImages.push({ img, idx })
     } else if (img.grid_row) {
       if (!rowGroups.has(img.grid_row)) rowGroups.set(img.grid_row, [])
@@ -21,7 +21,7 @@ export default function ImageGrid({ images, onOpen }) {
   return (
     <div className="space-y-3">
       {sortedRows.map(([rowNum, items]) => {
-        const totalCols = items.reduce((sum, { img }) => sum + (img.col_span || 1), 0)
+        const totalCols = items.reduce((sum, { img }) => sum + (Number(img.col_span) || 1), 0)
         return (
           <div
             key={rowNum}
