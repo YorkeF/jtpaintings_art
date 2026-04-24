@@ -19,26 +19,26 @@ export default function ImageCell({ img, onClick }) {
 
   // full_width images are rendered inside a 100vw wrapper div in ImageGrid;
   // the cell itself just needs to fill that wrapper at the correct height.
-  const marginTop = parseInt(img.margin_top) || 0
+  const marginTop = parseFloat(img.margin_top) || 0
 
   const style = arMode
     ? {
         width: arWidth,
         flexShrink: 0,
         aspectRatio: `${img.ar_w || 16} / ${img.ar_h || 9}`,
-        marginTop: marginTop > 0 ? `${marginTop}px` : undefined,
+        marginTop: marginTop > 0 ? `${marginTop}rem` : undefined,
       }
     : fullWidth
     ? {
         width: '100%',
         aspectRatio: `4 / ${rowSpan}`,
-        marginTop: marginTop > 0 ? `${marginTop}px` : undefined,
+        marginTop: marginTop > 0 ? `${marginTop}rem` : undefined,
       }
     : {
         gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
         gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
         aspectRatio: `${colSpan} / ${rowSpan}`,
-        marginTop: marginTop > 0 ? `${marginTop}px` : undefined,
+        marginTop: marginTop > 0 ? `${marginTop}rem` : undefined,
       }
 
   return (

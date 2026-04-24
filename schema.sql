@@ -57,7 +57,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- margin_top on images (px of space above thumbnail; default 0)
 SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'margin_top');
-SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN margin_top SMALLINT NOT NULL DEFAULT 0', 'SELECT 1');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN margin_top DECIMAL(4,2) NOT NULL DEFAULT 0.00', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- supersection_id on sections
