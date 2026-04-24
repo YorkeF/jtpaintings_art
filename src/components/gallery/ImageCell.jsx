@@ -5,15 +5,34 @@ function thumbSrc(imagePath) {
 export default function ImageCell({ img, onClick }) {
   const colSpan = img.col_span || 1
   const rowSpan = img.row_span || 1
+  const arMode = !!img.ar_mode
+
+  // Width formula for ar_mode flex container:
+  // Each "size unit" is 1/4 of the row. With gap=0.75rem, the exact width per unit
+  // is (100% - 3*0.75rem)/4, so size S = S*(100%+0.75rem)/4 - 0.75rem
+  // = calc(S*25% - 0.75*(1-S/4)rem)
+  const arSize = parseFloat(img.ar_size) || 1
+  const arWidth = arMode
+    ? `calc(${arSize * 25}% - ${(0.75 * (1 - arSize / 4)).toFixed(4)}rem)`
+    : undefined
+
+  const style = arMode
+    ? {
+        width: arWidth,
+        flexShrink: 0,
+        aspectRatio: `${img.ar_w || 16} / ${img.ar_h || 9}`,
+      }
+    : {
+        gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
+        gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
+        aspectRatio: `${colSpan} / ${rowSpan}`,
+      }
+
   return (
     <button
       onClick={onClick}
       className="group relative overflow-hidden rounded-lg bg-gray-200 shadow hover:shadow-md transition-shadow"
-      style={{
-        gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
-        gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
-        aspectRatio: `${colSpan} / ${rowSpan}`,
-      }}
+      style={style}
     >
       <img
         src={thumbSrc(img.image_path)}

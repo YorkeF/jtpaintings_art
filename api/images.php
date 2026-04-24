@@ -42,14 +42,18 @@ if ($method === 'POST') {
 if ($method === 'PUT' && $id) {
     requireAdmin();
     $body    = json_decode(file_get_contents('php://input'), true);
-    $colSpan  = isset($body['col_span']) ? max(1, min(20, (int) $body['col_span'])) : 1;
-    $rowSpan  = isset($body['row_span']) ? max(1, min(6, (int) $body['row_span'])) : 1;
-    $gridRow  = (isset($body['grid_row']) && $body['grid_row'] !== null && $body['grid_row'] !== '')
+    $colSpan   = isset($body['col_span']) ? max(1, min(20, (int) $body['col_span'])) : 1;
+    $rowSpan   = isset($body['row_span']) ? max(1, min(6, (int) $body['row_span'])) : 1;
+    $gridRow   = (isset($body['grid_row']) && $body['grid_row'] !== null && $body['grid_row'] !== '')
         ? max(1, (int) $body['grid_row'])
         : null;
-    $allowed  = ['cover', 'contain', 'fill', 'scale-down', 'none'];
+    $allowed   = ['cover', 'contain', 'fill', 'scale-down', 'none'];
     $objectFit = in_array($body['object_fit'] ?? '', $allowed) ? $body['object_fit'] : 'cover';
-    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ?, grid_row = ?, object_fit = ? WHERE id = ?');
+    $arMode    = !empty($body['ar_mode']) ? 1 : 0;
+    $arW       = isset($body['ar_w']) ? max(1, (int) $body['ar_w']) : 16;
+    $arH       = isset($body['ar_h']) ? max(1, (int) $body['ar_h']) : 9;
+    $arSize    = isset($body['ar_size']) ? max(0.1, round((float) $body['ar_size'], 2)) : 1.0;
+    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ?, grid_row = ?, object_fit = ?, ar_mode = ?, ar_w = ?, ar_h = ?, ar_size = ? WHERE id = ?');
     $stmt->execute([
         $body['title'],
         $body['description'] ?? '',
@@ -59,6 +63,10 @@ if ($method === 'PUT' && $id) {
         $rowSpan,
         $gridRow,
         $objectFit,
+        $arMode,
+        $arW,
+        $arH,
+        $arSize,
         $id,
     ]);
     jsonResponse(['success' => true]);

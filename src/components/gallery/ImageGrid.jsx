@@ -3,9 +3,12 @@ import ImageCell from './ImageCell.jsx'
 export default function ImageGrid({ images, onOpen }) {
   const autoImages = []
   const rowGroups = new Map()
+  const arImages = []
 
   images.forEach((img, idx) => {
-    if (img.grid_row) {
+    if (img.ar_mode) {
+      arImages.push({ img, idx })
+    } else if (img.grid_row) {
       if (!rowGroups.has(img.grid_row)) rowGroups.set(img.grid_row, [])
       rowGroups.get(img.grid_row).push({ img, idx })
     } else {
@@ -33,6 +36,13 @@ export default function ImageGrid({ images, onOpen }) {
       {autoImages.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {autoImages.map(({ img, idx }) => (
+            <ImageCell key={img.id} img={img} onClick={() => onOpen(idx)} />
+          ))}
+        </div>
+      )}
+      {arImages.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {arImages.map(({ img, idx }) => (
             <ImageCell key={img.id} img={img} onClick={() => onOpen(idx)} />
           ))}
         </div>
