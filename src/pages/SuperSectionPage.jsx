@@ -44,7 +44,7 @@ export default function SuperSectionPage() {
 
         {sections.map((section) =>
           section.images?.length > 0 ? (
-            <section key={section.id}>
+            <section key={section.id} id={section.slug}>
               <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b border-gray-200">
                 {section.name}
               </h2>

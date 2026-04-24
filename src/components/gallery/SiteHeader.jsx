@@ -19,19 +19,38 @@ export default function SiteHeader() {
           JT Paintings
         </Link>
         <nav className="flex items-center gap-6">
-          {supersections.map((ss) => (
-            <Link
-              key={ss.id}
-              to={`/${ss.slug}`}
-              className={`text-sm transition-colors ${
-                pathname === `/${ss.slug}`
-                  ? 'text-gray-900 font-medium'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {ss.name}
-            </Link>
-          ))}
+          {supersections.map((ss) => {
+            const sections = (ss.sections ?? []).filter((s) => s.images?.length > 0)
+            const isActive = pathname === `/${ss.slug}`
+            return (
+              <div key={ss.id} className="relative group">
+                <Link
+                  to={`/${ss.slug}`}
+                  className={`text-sm transition-colors ${
+                    isActive ? 'text-gray-900 font-medium' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {ss.name}
+                </Link>
+
+                {sections.length > 0 && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-50">
+                    <div className="bg-white rounded-lg shadow-lg border border-gray-100 py-1 min-w-max">
+                      {sections.map((section) => (
+                        <a
+                          key={section.id}
+                          href={`/${ss.slug}#${section.slug}`}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap"
+                        >
+                          {section.name}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
           <Link
             to="/contact"
             className={`text-sm transition-colors ${
