@@ -23,10 +23,10 @@ export default function SuperSectionPage() {
   }, [slug])
 
   useEffect(() => {
-    const target = location.state?.scrollTo || (location.hash ? location.hash.slice(1) : null)
+    const target = location.state?.scrollTo
     if (!target || !supersection) return
     document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' })
-  }, [supersection, location.state?.scrollTo, location.hash])
+  }, [supersection, location.state?.scrollTo])
 
   if (notFound) return <Navigate to="/" replace />
 
