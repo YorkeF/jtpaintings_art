@@ -24,6 +24,16 @@ SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_S
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN row_span TINYINT NOT NULL DEFAULT 1', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- grid_row on images (explicit row grouping; NULL = auto-placed)
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'grid_row');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN grid_row INT NULL DEFAULT NULL', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- object_fit on images (CSS object-fit for thumbnail display; default 'cover')
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'object_fit');
+SET @sql = IF(@col_exists = 0, "ALTER TABLE images ADD COLUMN object_fit VARCHAR(20) NOT NULL DEFAULT 'cover'", 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 -- supersection_id on sections
 SET @col_exists = (
   SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

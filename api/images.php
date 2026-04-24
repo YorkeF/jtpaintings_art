@@ -42,9 +42,14 @@ if ($method === 'POST') {
 if ($method === 'PUT' && $id) {
     requireAdmin();
     $body    = json_decode(file_get_contents('php://input'), true);
-    $colSpan = isset($body['col_span']) ? max(1, min(6, (int) $body['col_span'])) : 1;
-    $rowSpan = isset($body['row_span']) ? max(1, min(6, (int) $body['row_span'])) : 1;
-    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ? WHERE id = ?');
+    $colSpan  = isset($body['col_span']) ? max(1, min(20, (int) $body['col_span'])) : 1;
+    $rowSpan  = isset($body['row_span']) ? max(1, min(6, (int) $body['row_span'])) : 1;
+    $gridRow  = (isset($body['grid_row']) && $body['grid_row'] !== null && $body['grid_row'] !== '')
+        ? max(1, (int) $body['grid_row'])
+        : null;
+    $allowed  = ['cover', 'contain', 'fill', 'scale-down', 'none'];
+    $objectFit = in_array($body['object_fit'] ?? '', $allowed) ? $body['object_fit'] : 'cover';
+    $stmt = $db->prepare('UPDATE images SET title = ?, description = ?, section_id = ?, sort_order = ?, col_span = ?, row_span = ?, grid_row = ?, object_fit = ? WHERE id = ?');
     $stmt->execute([
         $body['title'],
         $body['description'] ?? '',
@@ -52,6 +57,8 @@ if ($method === 'PUT' && $id) {
         $body['sort_order'] ?? 0,
         $colSpan,
         $rowSpan,
+        $gridRow,
+        $objectFit,
         $id,
     ]);
     jsonResponse(['success' => true]);

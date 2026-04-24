@@ -1,39 +1,42 @@
-function thumbSrc(imagePath) {
-  return imagePath.replace(/(\.[^.]+)$/, '_thumb.jpg')
-}
+import ImageCell from './ImageCell.jsx'
 
 export default function ImageGrid({ images, onOpen }) {
+  const autoImages = []
+  const rowGroups = new Map()
+
+  images.forEach((img, idx) => {
+    if (img.grid_row) {
+      if (!rowGroups.has(img.grid_row)) rowGroups.set(img.grid_row, [])
+      rowGroups.get(img.grid_row).push({ img, idx })
+    } else {
+      autoImages.push({ img, idx })
+    }
+  })
+
+  const sortedRows = [...rowGroups.entries()].sort(([a], [b]) => a - b)
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {images.map((img, i) => {
-        const colSpan = img.col_span || 1
-        const rowSpan = img.row_span || 1
+    <div className="space-y-3">
+      {sortedRows.map(([rowNum, items]) => {
+        const totalCols = items.reduce((sum, { img }) => sum + (img.col_span || 1), 0)
         return (
-          <button
-            key={img.id}
-            onClick={() => onOpen(i)}
-            className="group relative overflow-hidden rounded-lg bg-gray-200 shadow hover:shadow-md transition-shadow"
-            style={{
-              gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
-              gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
-              aspectRatio: `${colSpan} / ${rowSpan}`,
-            }}
+          <div
+            key={rowNum}
+            style={{ display: 'grid', gridTemplateColumns: `repeat(${totalCols}, 1fr)`, gap: '0.75rem' }}
           >
-            <img
-              src={thumbSrc(img.image_path)}
-              onError={(e) => { e.currentTarget.src = img.image_path; e.currentTarget.onerror = null }}
-              alt={img.title}
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-300"
-            />
-            <div className="absolute inset-x-0 top-0 px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <span className="text-white text-xs font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] line-clamp-1">
-                {img.title}
-              </span>
-            </div>
-          </button>
+            {items.map(({ img, idx }) => (
+              <ImageCell key={img.id} img={img} onClick={() => onOpen(idx)} />
+            ))}
+          </div>
         )
       })}
+      {autoImages.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {autoImages.map(({ img, idx }) => (
+            <ImageCell key={img.id} img={img} onClick={() => onOpen(idx)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

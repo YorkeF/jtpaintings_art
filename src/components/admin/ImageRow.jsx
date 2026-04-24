@@ -6,6 +6,8 @@ export default function ImageRow({ image, sections, onChanged }) {
   const [description, setDescription] = useState(image.description || '')
   const [colSpan, setColSpan] = useState(image.col_span || 1)
   const [rowSpan, setRowSpan] = useState(image.row_span || 1)
+  const [gridRow, setGridRow] = useState(image.grid_row ? String(image.grid_row) : '')
+  const [objectFit, setObjectFit] = useState(image.object_fit || 'cover')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -16,6 +18,8 @@ export default function ImageRow({ image, sections, onChanged }) {
     setDescription(image.description || '')
     setColSpan(image.col_span || 1)
     setRowSpan(image.row_span || 1)
+    setGridRow(image.grid_row ? String(image.grid_row) : '')
+    setObjectFit(image.object_fit || 'cover')
   }
 
   const save = async () => {
@@ -31,6 +35,8 @@ export default function ImageRow({ image, sections, onChanged }) {
         sort_order: image.sort_order,
         col_span: colSpan,
         row_span: rowSpan,
+        grid_row: gridRow !== '' ? parseInt(gridRow) : null,
+        object_fit: objectFit,
       }),
     })
     setSaving(false)
@@ -69,16 +75,16 @@ export default function ImageRow({ image, sections, onChanged }) {
               rows={3}
               className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
             />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs text-gray-500 font-medium">Grid size</span>
               <label className="flex items-center gap-1 text-xs text-gray-600">
                 W
                 <input
                   type="number"
                   min={1}
-                  max={6}
+                  max={20}
                   value={colSpan}
-                  onChange={(e) => setColSpan(Math.max(1, Math.min(6, parseInt(e.target.value) || 1)))}
+                  onChange={(e) => setColSpan(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
                   className="w-12 border border-gray-300 rounded px-1 py-0.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </label>
@@ -93,8 +99,29 @@ export default function ImageRow({ image, sections, onChanged }) {
                   className="w-12 border border-gray-300 rounded px-1 py-0.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </label>
+              <span className="text-xs text-gray-500 font-medium">Row</span>
+              <input
+                type="number"
+                min={1}
+                placeholder="Auto"
+                value={gridRow}
+                onChange={(e) => setGridRow(e.target.value)}
+                className="w-16 border border-gray-300 rounded px-1 py-0.5 text-center text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <span className="text-xs text-gray-500 font-medium">Fit</span>
+              <select
+                value={objectFit}
+                onChange={(e) => setObjectFit(e.target.value)}
+                className="border border-gray-300 rounded px-1 py-0.5 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="cover">cover</option>
+                <option value="contain">contain</option>
+                <option value="fill">fill</option>
+                <option value="scale-down">scale-down</option>
+                <option value="none">none</option>
+              </select>
               <span className="text-xs text-gray-400">
-                (1×1 is default square)
+                (blank row = auto)
               </span>
             </div>
             <div className="flex gap-2">
@@ -120,6 +147,16 @@ export default function ImageRow({ image, sections, onChanged }) {
               {spanBadge && (
                 <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
                   {spanBadge}
+                </span>
+              )}
+              {image.grid_row && (
+                <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                  row {image.grid_row}
+                </span>
+              )}
+              {image.object_fit && image.object_fit !== 'cover' && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                  {image.object_fit}
                 </span>
               )}
             </div>
