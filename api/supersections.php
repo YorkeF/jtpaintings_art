@@ -34,9 +34,17 @@ if ($method === 'POST') {
 if ($method === 'PUT' && $id) {
     requireAdmin();
     $body = json_decode(file_get_contents('php://input'), true);
-    $name = trim($body['name'] ?? '');
-    if ($name === '') jsonResponse(['error' => 'Name is required'], 400);
-    $db->prepare('UPDATE supersections SET name = ? WHERE id = ?')->execute([$name, $id]);
+
+    if (array_key_exists('name', $body)) {
+        $name = trim($body['name']);
+        if ($name === '') jsonResponse(['error' => 'Name is required'], 400);
+        $db->prepare('UPDATE supersections SET name = ? WHERE id = ?')->execute([$name, $id]);
+    }
+
+    if (array_key_exists('sort_order', $body)) {
+        $db->prepare('UPDATE supersections SET sort_order = ? WHERE id = ?')->execute([(int) $body['sort_order'], $id]);
+    }
+
     jsonResponse(['success' => true]);
 }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import SectionBlock from './SectionBlock.jsx'
 
-export default function SuperSectionBlock({ supersection, sections, supersections, onChanged }) {
+export default function SuperSectionBlock({ supersection, sections, supersections, onChanged, onMoveUp, onMoveDown, canMoveUp, canMoveDown }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(supersection.name)
   const [saving, setSaving] = useState(false)
@@ -60,6 +60,22 @@ export default function SuperSectionBlock({ supersection, sections, supersection
             <h2 className="text-base font-bold text-gray-700 uppercase tracking-wide flex-1">
               {supersection.name}
             </h2>
+            <button
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+              className="text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-default leading-none"
+              title="Move up"
+            >
+              ↑
+            </button>
+            <button
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+              className="text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-default leading-none"
+              title="Move down"
+            >
+              ↓
+            </button>
             <button
               onClick={() => setEditing(true)}
               className="text-sm text-gray-500 hover:text-gray-700"

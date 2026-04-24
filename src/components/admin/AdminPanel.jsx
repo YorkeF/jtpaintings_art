@@ -51,6 +51,27 @@ export default function AdminPanel({ onLogout }) {
     load()
   }
 
+  const moveSuper = async (id, direction) => {
+    const idx = supersections.findIndex((ss) => ss.id === id)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= supersections.length) return
+    const reordered = [...supersections]
+    ;[reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]]
+    await Promise.all([
+      fetch(`/api/supersections.php?id=${reordered[idx].id}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sort_order: idx }),
+      }),
+      fetch(`/api/supersections.php?id=${reordered[swapIdx].id}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sort_order: swapIdx }),
+      }),
+    ])
+    load()
+  }
+
   const createSupersection = async (e) => {
     e.preventDefault()
     if (!newSuperName.trim()) return
@@ -268,13 +289,17 @@ export default function AdminPanel({ onLogout }) {
         />
 
         {/* Groups with their sections */}
-        {supersections.map((ss) => (
+        {supersections.map((ss, i) => (
           <SuperSectionBlock
             key={ss.id}
             supersection={ss}
             sections={sections}
             supersections={supersections}
             onChanged={load}
+            canMoveUp={i > 0}
+            canMoveDown={i < supersections.length - 1}
+            onMoveUp={() => moveSuper(ss.id, 'up')}
+            onMoveDown={() => moveSuper(ss.id, 'down')}
           />
         ))}
 
